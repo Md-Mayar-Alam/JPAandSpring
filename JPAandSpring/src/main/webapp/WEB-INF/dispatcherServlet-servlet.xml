@@ -15,6 +15,7 @@
 <!-- 	This is used to initiate the scan for SpringWebConfig file in com.spring package				 -->
 	<context:component-scan base-package="com.controller" />
 	<context:component-scan base-package="com.service" />
+	<context:component-scan base-package="com.repositoryConfig" />
 	
 	<jpa:repositories base-package="com.repository" entity-manager-factory-ref="entityManagerFactoryBean"/>
 	
@@ -35,9 +36,6 @@
 		<property name="defaultEncoding" value="UTF-8"/>
 	</bean>
 	
-	<!-- DO NOT USE THIS -->
-	<!-- <bean class="org.springframework.orm.hibernate4.HibernateExceptionTranslator"/> -->
-	
 	<!-- <mvc:interceptors>
 		<bean id="localeChangeInterceptor" class="org.springframework.web.servlet.i18n.LocaleChangeInterceptor">
 			<property name="paramName" value="language" />
@@ -55,9 +53,8 @@
 		<property name="suffix" value=".jsp" />
 	</bean>
 	
-	<!-- bean for DatabaseConfiguration class from properties file -->
+	<!-- bean for getting direct values from database.properties file in xml or in DatabaseConfiguration class-->
 	<context:property-placeholder location="/WEB-INF/messages/database.properties"/>
-	<bean id="databaseConfiguration" class="com.repositoryConfig.DatabaseConfiguration" />
 	
 	<!-- EntityManagerFactory bean -->
 	<bean id="transactionManager" class="org.springframework.orm.jpa.JpaTransactionManager">
@@ -70,26 +67,33 @@
 		<property name="dataSource" ref="dataSource" />
 		<!-- This makes /META-INF/persistence.xml is no longer necessary -->
 		<property name="packagesToScan" value="com.model" />
-		<!-- <property name="persistenceProviderClass">
-			<value type="java.lang.Class">org.hibernate.jpa.HibernatePersistenceProvider</value>
-		</property> -->
 		<property name="jpaVendorAdapter">
             <bean class="org.springframework.orm.jpa.vendor.HibernateJpaVendorAdapter" />
         </property>
 		<property name="jpaProperties">
 			<props>
-				<prop key="hibernate.hbm2ddl.auto">update</prop>
-				<prop key="hibernate.dialect">org.hibernate.dialect.MySQL5Dialect</prop>
+				<prop key="hibernate.hbm2ddl.auto">${spring.jpa.hibernate.ddl-auto}</prop>
+				<prop key="hibernate.dialect">${spring.jpa.properties.hibernate.dialect}</prop>
 			</props>
 		</property>
 	</bean>
 	
-	<bean id="dataSource"
+	<!-- HARD CODED DATABASE CONFIGURATION -->
+	<!-- <bean id="dataSource"
           class="org.springframework.jdbc.datasource.DriverManagerDataSource">
          <property name="driverClassName" value="com.mysql.jdbc.Driver" />
          <property name="url" value="jdbc:mysql://localhost:3306/jpa_spring" />
          <property name="username" value="root" />
          <property name="password" value="mca6" />
+    </bean> -->
+    
+    <!-- DATABASE CONFIGURATION FROM PROPERTIES FILE -->
+    
+    <bean id="dataSource" class="org.springframework.jdbc.datasource.DriverManagerDataSource">
+    	<property name="driverClassName" value="${spring.datasource.driver}"></property>
+    	<property name="url" value="${spring.datasource.url}"></property>
+    	<property name="username" value="${spring.datasource.username}"></property>
+    	<property name="password" value="${spring.datasource.password}"></property>
     </bean>
 	
 </beans>

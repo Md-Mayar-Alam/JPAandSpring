@@ -2,6 +2,10 @@ package com.repositoryConfig;
 
 import org.springframework.beans.factory.annotation.Value;
 
+/*NOTE: DO NOT USE THIS CLASS IN CASE OF XML CONFIGURATION THROUGH dispatcherServlet-servlet.xml
+ *	IT WILL BE USED IN CASE OF ANNOTATION CONFIGURATION 
+ */
+
 /*@Component
 @PropertySource(value = { "classpath:webapp/WEB-INF/messages/database.properties" })*/
 public class DatabaseConfiguration {
