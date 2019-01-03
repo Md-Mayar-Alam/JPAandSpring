@@ -57,13 +57,6 @@
 			<version>${spring.version}</version>
 		</dependency>
 
-		<!-- Spring Security -->
-		<!-- <dependency>
-			<groupId>org.springframework.security</groupId>
-			<artifactId>spring-security-taglibs</artifactId>
-			<version>${spring.version}</version>
-		</dependency> -->
-
 		<!-- jstl -->
 		<dependency>
 			<groupId>jstl</groupId>
