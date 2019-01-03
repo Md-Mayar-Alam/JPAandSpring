@@ -1,0 +1,2 @@
+Follow this link to generate Entity classes from tables using hibernate tools
+https://www.youtube.com/watch?v=Dq74HO-oYeI

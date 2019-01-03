@@ -1,0 +1,20 @@
+<web-app>
+	<welcome-file-list>
+		<welcome-file>index</welcome-file>
+	</welcome-file-list>
+
+	<!-- <listener> -->
+	<!-- <listener-class>org.springframework.web.context.ContextLoaderListener</listener-class> -->
+	<!-- </listener> -->
+	<!-- Front Controller -->
+	<servlet>
+		<servlet-name>dispatcherServlet</servlet-name>
+		<servlet-class>org.springframework.web.servlet.DispatcherServlet</servlet-class>
+		<load-on-startup>1</load-on-startup>
+	</servlet>
+	<servlet-mapping>
+		<servlet-name>dispatcherServlet</servlet-name>
+		<url-pattern>/</url-pattern>
+		<url-pattern>/index</url-pattern>
+	</servlet-mapping>
+</web-app>
