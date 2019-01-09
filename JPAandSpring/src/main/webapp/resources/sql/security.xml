@@ -1,0 +1,566 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- [y] hybris Platform Copyright (c) 2000-2013 hybris AG All rights reserved. 
+	This software is the confidential and proprietary information of hybris ("Confidential 
+	Information"). You shall not disclose such Confidential Information and shall 
+	use it only in accordance with the terms of the license agreement you entered 
+	into with hybris. -->
+
+<beans xmlns="http://www.springframework.org/schema/beans"
+	xmlns:security="http://www.springframework.org/schema/security"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:context="http://www.springframework.org/schema/context"
+	xmlns:aop="http://www.springframework.org/schema/aop"
+	xsi:schemaLocation="http://www.springframework.org/schema/beans
+       
+		http://www.springframework.org/schema/beans/spring-beans.xsd
+		http://www.springframework.org/schema/security
+		http://www.springframework.org/schema/security/spring-security-4.1.xsd
+		http://www.springframework.org/schema/context
+        http://www.springframework.org/schema/context/spring-context.xsd
+		http://www.springframework.org/schema/aop
+		http://www.springframework.org/schema/aop/spring-aop.xsd">
+
+	<context:annotation-config />
+	<context:component-scan base-package="com.grainger.punchout.web.helpers" />
+
+	<!-- do not apply Spring Security to these uri -->
+	<security:http pattern="/_ui/**" security="none" />
+	<security:http pattern="/flash/**" security="none" />
+	<security:http pattern="/favicon.ico" security="none" />
+	<security:http pattern="/images/**" security="none" />
+	<security:http pattern="/js/**" security="none" />
+	<security:http pattern="/stylesheets/**" security="none" />
+	<security:global-method-security
+		pre-post-annotations="enabled" />
+
+	<!-- Security config for checkout - it has its own login page -->
+	<security:http disable-url-rewriting="true" pattern="/checkout/**"
+		entry-point-ref="checkoutAuthenticationEntryPoint">
+		
+		<security:headers disabled="true" />
+        <security:csrf disabled="true" />
+
+		<security:session-management
+			session-authentication-strategy-ref="fixation" />
+			
+		<security:remember-me key="yacceleratorstorefront" services-ref="rememberMeServices"/>
+
+		<!-- SSL / AUTHENTICATED pages -->
+		<security:intercept-url pattern="/checkout/j_spring_security_check"
+			requires-channel="https" />
+		<security:intercept-url pattern="/checkout*"
+			access="hasRole('ROLE_CUSTOMERGROUP')" requires-channel="https" />
+		<security:intercept-url pattern="/checkout/**"
+			access="hasRole('ROLE_CUSTOMERGROUP')" requires-channel="https" />
+
+		<!-- https for paymetric frame -->
+		<security:intercept-url pattern="/PaymentFormController/*"
+			requires-channel="https" />
+		<security:intercept-url pattern="/PaymentFormController/**"
+			requires-channel="https" />
+
+		<security:form-login login-processing-url="/checkout/j_spring_security_check"
+			login-page="/login/checkout" authentication-failure-handler-ref="loginCheckoutAuthenticationFailureHandler"
+			authentication-success-handler-ref="loginCheckoutGuidAuthenticationSuccessHandler" 
+			username-parameter="j_username"
+			password-parameter="j_password"/>
+
+		<security:logout logout-url="/logout"
+			success-handler-ref="logoutSuccessHandler" />
+
+		<security:port-mappings>
+			<security:port-mapping
+				http="#{configurationService.configuration.getProperty('tomcat.http.port')}"
+				https="#{configurationService.configuration.getProperty('tomcat.ssl.port')}" />
+			<security:port-mapping http="80" https="443" />
+			<!--security:port-mapping http="#{configurationService.configuration.getProperty('proxy.http.port')}" 
+				https="#{configurationService.configuration.getProperty('proxy.ssl.port')}" 
+				/ -->
+		</security:port-mappings>
+
+		<security:request-cache ref="httpSessionRequestCache" />
+
+		<!-- Custom Filters -->
+		<security:custom-filter after="SECURITY_CONTEXT_FILTER" ref="authenticatedHeaderFilter"/>
+
+	</security:http>
+
+	<!-- Ignores url(s) that match paths specified in the set -->
+	<bean id="excludeUrlRequestMatcher"
+		class="com.grainger.storefront.security.ExcludeUrlRequestMatcher">
+		<property name="excludeUrlSet" ref="excludeUrlSet" />
+		<property name="pathMatcher" ref="defaultPathMatcher" />
+	</bean>
+
+	<!-- The set of url(s) to exclude from the 'Default security config' -->
+	<bean id="excludeUrlSet" class="java.util.HashSet" />
+
+	<!-- Path matcher to use, AntPathMatcher is the default -->
+	<alias name="antPathMatcher" alias="defaultPathMatcher" />
+	<bean id="antPathMatcher" class="org.springframework.util.AntPathMatcher" />
+
+	<!-- Default security config -->
+	<security:http disable-url-rewriting="true"
+		request-matcher-ref="excludeUrlRequestMatcher" use-expressions="true"
+		entry-point-ref="gcomAuthenticationEntryPoint">
+
+		<security:headers disabled="true" />
+        <security:csrf disabled="true" />
+        
+		<security:remember-me key="yacceleratorstorefront" services-ref="rememberMeServices"/>
+
+		<security:anonymous username="anonymous"
+			granted-authority="ROLE_ANONYMOUS" />
+
+		<security:session-management
+			session-authentication-strategy-ref="fixation" />
+
+
+		<!-- SSL / AUTHENTICATED pages -->
+
+		<security:intercept-url pattern="/my-account/add-user"
+			access="hasAnyRole('ROLE_FULLRIGHTS','ROLE_CUSTOMERADMINRIGHTS')"
+			requires-channel="https" />
+		<security:intercept-url pattern="/my-account/users"
+			access="hasAnyRole('ROLE_FULLRIGHTS','ROLE_CUSTOMERADMINRIGHTS')"
+			requires-channel="https" />
+
+		<security:intercept-url pattern="/my-account/account-settings"
+			access="hasRole('ROLE_CUSTOMERADMINRIGHTS')" requires-channel="https" />
+		<security:intercept-url pattern="/my-account/applyForCredit"
+			access="hasRole('ROLE_CUSTOMERADMINRIGHTS')" requires-channel="https" />
+		<security:intercept-url pattern="/my-account/oms-users"
+			access="hasAnyRole('ROLE_CUSTOMERADMINRIGHTS')" requires-channel="https" />
+
+		<security:intercept-url pattern="/my-account/add-user/"
+			access="hasAnyRole('ROLE_FULLRIGHTS','ROLE_CUSTOMERADMINRIGHTS')"
+			requires-channel="https" />
+		<security:intercept-url pattern="/my-account/users/*"
+			access="hasAnyRole('ROLE_FULLRIGHTS','ROLE_CUSTOMERADMINRIGHTS')"
+			requires-channel="https" />
+
+		<security:intercept-url pattern="/my-account/account-settings/"
+			access="hasRole('ROLE_CUSTOMERADMINRIGHTS')" requires-channel="https" />
+		<security:intercept-url pattern="/my-account/applyForCredit/"
+			access="hasRole('ROLE_CUSTOMERADMINRIGHTS')" requires-channel="https" />
+		<security:intercept-url pattern="/my-account/oms-users/"
+			access="hasAnyRole('ROLE_CUSTOMERADMINRIGHTS')" requires-channel="https" />
+			
+		<security:intercept-url pattern="/my-account/list/**"
+			access="hasAnyRole('ROLE_EPROUSER','ROLE_CUSTOMERGROUP')" requires-channel="https" />
+        <security:intercept-url pattern="/my-account/ajaxlists/**"
+            access="hasAnyRole('ROLE_EPROUSER','ROLE_CUSTOMERGROUP')" requires-channel="https" />
+
+		<security:intercept-url pattern="/my-account*"
+			access="hasRole('ROLE_CUSTOMERGROUP')" requires-channel="https" />
+		<security:intercept-url pattern="/my-account/**"
+			access="hasRole('ROLE_CUSTOMERGROUP')" requires-channel="https" />
+
+		<!-- https for paymetric frame -->
+		<security:intercept-url pattern="/PaymentFormController/*"
+			requires-channel="https" />
+		<security:intercept-url pattern="/PaymentFormController/**"
+			requires-channel="https" />
+
+		<security:intercept-url pattern="/cart/checkout/"
+			requires-channel="https" />
+
+		<!-- ePro punchout Controller Security -->
+		<security:intercept-url pattern="/punchout/mex/cxml"
+			access="permitAll" method="POST" requires-channel="any" />
+		<security:intercept-url pattern="/punchout/mex/oci"
+			access="permitAll" method="POST" requires-channel="any" />
+		<security:intercept-url pattern="/punchout/mex/start"
+			access="permitAll" requires-channel="any" />
+		<security:intercept-url pattern="/punchout/mex/logout"
+			access="permitAll" requires-channel="any" />
+		<security:intercept-url pattern="/punchout/mex/error"
+			access="permitAll" requires-channel="https" />
+		<security:intercept-url pattern="/punchout/mex/submitCart"
+			method="POST" access="isAuthenticated()" requires-channel="any" />
+
+		<security:custom-filter ref="initialEProAuthenticationFilter"
+			position="LAST" />
+		<security:custom-filter ref="gwwLoginFilter"
+			before="LAST" />
+		<security:custom-filter ref="gcomExpiredSessionFilter"
+			before="SESSION_MANAGEMENT_FILTER" />
+
+
+		<!-- SSL / AUTHENTICATED pages Organization management pages -->
+		<security:intercept-url pattern="/my-company*"
+			access="ROLE_B2BADMINGROUP" requires-channel="https" />
+		<security:intercept-url pattern="/my-company/**"
+			access="ROLE_B2BADMINGROUP" requires-channel="https" />
+
+		<!-- SSL / ANONYMOUS pages Login pages need to be SSL, but occur before 
+			authentication -->
+		<security:intercept-url pattern="/login"
+			requires-channel="https" />
+		<security:intercept-url pattern="/login/account-select"
+			requires-channel="https" access="isAuthenticated()" />
+		<security:intercept-url pattern="/login/micrositeLevel-select"
+			requires-channel="https" access="isAuthenticated()" />
+		<security:intercept-url pattern="/login/checkout"
+			requires-channel="https" />
+		<security:intercept-url pattern="/j_spring_security_check"
+			requires-channel="https" />
+		<security:intercept-url pattern="/logout"
+			requires-channel="https" />
+
+
+		<security:intercept-url pattern="/register"
+			requires-channel="https" access="!hasAnyRole('ROLE_EPROUSER','ROLE_CUSTOMERGROUP')" />
+		<security:intercept-url pattern="/register/**"
+			requires-channel="https" access="!hasAnyRole('ROLE_EPROUSER','ROLE_CUSTOMERGROUP')" />
+
+		<!-- Micro site related security configurations -->
+		<security:intercept-url pattern="/my-account/microsites/createPOlist"
+			access="hasRole('ROLE_CUSTOMERADMINRIGHTS')" requires-channel="https" />
+		<security:intercept-url pattern="/my-account/microsites/createPOlist/**"
+			access="hasRole('ROLE_CUSTOMERADMINRIGHTS')" requires-channel="https" />
+		<security:intercept-url pattern="/my-account/microsites/deletePOList"
+			access="hasRole('ROLE_CUSTOMERADMINRIGHTS')" requires-channel="https" />
+		<security:intercept-url pattern="/my-account/microsites/deletePOList/**"
+			access="hasRole('ROLE_CUSTOMERADMINRIGHTS')" requires-channel="https" />
+		<security:intercept-url pattern="/my-account/microsites/addToPolist"
+			access="hasRole('ROLE_CUSTOMERADMINRIGHTS')" requires-channel="https" />
+		<security:intercept-url pattern="/my-account/microsites/addToPolist/**"
+			access="hasRole('ROLE_CUSTOMERADMINRIGHTS')" requires-channel="https" />
+
+		<!-- MiniCart and CartPopup can occur on either secure or insecure pages -->
+		<security:intercept-url pattern="/cart/rollover/*"
+			requires-channel="any" />
+		<security:intercept-url pattern="/cart/miniCart/*"
+			requires-channel="any" />
+
+		<security:intercept-url pattern="/search/autocompleteSecure/**"
+			requires-channel="https" />
+
+		<security:intercept-url pattern="/search/autocomplete/*"
+			requires-channel="any" />
+
+		<!-- Only allow logged in customers to see the ordering form page -->
+		<security:intercept-url pattern="/**/p/**/orderForm"
+			access="hasRole('ROLE_CUSTOMERGROUP')" />
+
+		<!-- OPEN / ANONYMOUS pages Run all other (public) pages openly. Note that 
+			while credentials are secure, the session id can be sniffed. If this is a 
+			security concern, then this line should be re-considered -->
+		<security:intercept-url pattern="/**"
+			requires-channel="any" method="POST" />
+		<!-- Allow posts on either secure or insecure -->
+		<security:intercept-url pattern="/**"
+			requires-channel="${storefront.security.default.required.channel}" />
+			
+		<security:intercept-url pattern="/form/newCatalog*"
+			access="hasAnyRole('ROLE_EPROUSER','ROLE_CUSTOMERGROUP')" requires-channel="https" />
+		<!-- Everything else should be insecure -->
+
+		<security:form-login login-page="/login" login-processing-url="/j_spring_security_check"
+			authentication-failure-handler-ref="loginAuthenticationFailureHandler"
+			authentication-success-handler-ref="loginGuidAuthenticationSuccessHandler" 
+			username-parameter="j_username"
+			password-parameter="j_password"/>
+
+
+		<security:logout logout-url="/logout"
+			success-handler-ref="logoutSuccessHandler" />
+
+		<security:port-mappings>
+			<security:port-mapping
+				http="#{configurationService.configuration.getProperty('tomcat.http.port')}"
+				https="#{configurationService.configuration.getProperty('tomcat.ssl.port')}" />
+			<security:port-mapping http="80" https="443" />
+			<!--security:port-mapping http="#{configurationService.configuration.getProperty('proxy.http.port')}" 
+				https="#{configurationService.configuration.getProperty('proxy.ssl.port')}" 
+				/ -->
+		</security:port-mappings>
+
+		<security:request-cache ref="httpSessionRequestCache" />
+
+		<!-- Custom Filters -->
+		<security:custom-filter after="SECURITY_CONTEXT_FILTER" ref="authenticatedHeaderFilter"/>
+
+
+		<security:access-denied-handler ref="b2bAccessDeniedHandler" />
+	</security:http>
+
+
+
+	<security:authentication-manager alias="authenticationManager">
+		<security:authentication-provider
+			ref="acceleratorAuthenticationProvider" />
+		<security:authentication-provider
+			ref="eproAuthenticationProvider" />
+	</security:authentication-manager>
+
+	<alias name="gcomAuthenticationEntryPoint" alias="authenticationEntryPoint" />
+	<bean id="gcomAuthenticationEntryPoint"
+		class="com.grainger.storefront.security.GcomLoginUrlAuthenticationEntryPoint">
+		<constructor-arg name="loginFormUrl" value="/login" />
+	</bean>
+
+	<bean id="checkoutAuthenticationEntryPoint"
+		class="com.grainger.storefront.security.GcomCheckoutLoginAuthenticationEntryPoint">
+		<constructor-arg name="loginFormUrl" value="/login/checkout" />
+	</bean>
+
+	<bean id="gcomExpiredSessionFilter"
+		class="com.grainger.spring.security.web.filters.ExpiredSessionFilter" />
+
+	<bean id="eProSessionOutRedirectFilter"
+		class="com.grainger.punchoutaddon.store.web.filters.EproSessionOutRedirectFilter"
+		scope="tenant" />
+	<bean id="initialEProAuthenticationFilter"
+		class="com.grainger.spring.security.web.filters.EProInitializeAuthenticationFilter">
+		<constructor-arg name="key" value="tokenId" />
+		<constructor-arg name="principal" value="eproUser" />
+		<property name="defaultTargetUrl" value="/" />
+		<property name="filterProcessesUrl" value="/punchout/mex/start" />
+		<property name="authenticationManager" ref="authenticationManager" />
+		<property name="authenticationSuccessHandler"
+			ref="punchoutLoginGuidAuthenticationSuccessHandler" />
+	</bean>
+
+	<bean id="b2bAccessDeniedHandler"
+		class="com.grainger.storefront.security.DefaultAccessDeniedHandler" />
+
+	<bean id="acceleratorAuthenticationProvider"
+		class="com.grainger.storefront.security.AcceleratorAuthenticationProvider">
+		<property name="bruteForceAttackCounter" ref="bruteForceAttackCounter" />
+		<property name="cartService" ref="cartService" />
+		<property name="userService" ref="userService" />
+		<property name="modelService" ref="modelService" />
+		<property name="preAuthenticationChecks" ref="rejectUserPreAuthenticationChecks" />
+		<property name="userDetailsService" ref="originalUidUserDetailsService" />
+		<property name="adminGroup" value="ROLE_ADMINGROUP" />
+		<property name="b2bUserGroupProvider" ref="b2bUserGroupProvider" />
+		<aop:scoped-proxy />
+	</bean>
+
+	<bean id="rejectUserPreAuthenticationChecks"
+		class="de.hybris.platform.spring.security.RejectUserPreAuthenticationChecks">
+		<property name="allowedUserTypes">
+			<list>
+				<value>B2BCustomer</value>
+			</list>
+		</property>
+	</bean>
+
+	<bean id="coreUserDetailsService"
+		class="de.hybris.platform.spring.security.CoreUserDetailsService" />
+
+	<bean id="guidCookieStrategy"
+		class="com.grainger.storefront.security.impl.DefaultGUIDCookieStrategy">
+		<property name="cookieGenerator" ref="guidCookieGenerator" />
+	</bean>
+
+
+	<alias name="defaultGuidCookieGenerator" alias="guidCookieGenerator" />
+	<bean id="defaultGuidCookieGenerator"
+		class="com.grainger.storefront.security.cookie.EnhancedCookieGenerator">
+		<property name="cookieSecure" value="true" />
+		<property name="cookieName" value="acceleratorSecureGUID" />
+		<property name="httpOnly" value="true" />
+		<property name="useDefaultPath" value="true" />
+	</bean>
+
+	<bean id="autoLoginStrategy"
+		class="com.grainger.storefront.security.impl.DefaultAutoLoginStrategy">
+		<property name="authenticationManager" ref="authenticationManager" />
+		<property name="customerFacade" ref="customerFacade" />
+		<property name="guidCookieStrategy" ref="guidCookieStrategy" />
+		<property name="rememberMeServices" ref="rememberMeServices"/>
+		<property name="gwwSessionRestorationStrategy" ref="gwwSessionRestorationStrategy" />
+	</bean>
+
+	<bean id="httpSessionRequestCache"
+		class="com.grainger.storefront.security.impl.WebHttpSessionRequestCache">
+		<property name="sessionService" ref="sessionService" />
+	</bean>
+
+	<bean id="redirectStrategy"
+		class="org.springframework.security.web.DefaultRedirectStrategy" />
+
+
+	<!-- Login Success Handlers -->
+
+	<bean id="loginGuidAuthenticationSuccessHandler"
+		class="com.grainger.storefront.security.GUIDAuthenticationSuccessHandler">
+		<property name="authenticationSuccessHandler" ref="loginAuthenticationSuccessHandler" />
+		<property name="guidCookieStrategy" ref="guidCookieStrategy" />
+		<aop:scoped-proxy />
+	</bean>
+
+	<bean id="punchoutLoginGuidAuthenticationSuccessHandler"
+		class="com.grainger.storefront.security.GUIDAuthenticationSuccessHandler">
+		<property name="authenticationSuccessHandler" ref="punchoutAuthenticationSuccessHandler" />
+		<property name="guidCookieStrategy" ref="guidCookieStrategy" />
+		<aop:scoped-proxy />
+	</bean>
+
+
+	<bean id="loginAuthenticationSuccessHandler"
+		class="com.grainger.storefront.security.StorefrontAuthenticationSuccessHandler">
+		<property name="customerFacade" ref="customerFacade" />
+		<property name="accountFacade" ref="gwwAccountFacade" />
+		<property name="defaultTargetUrl" value="/my-account" />
+		<property name="targetUrlParameter" value="frwdUrlPath" />
+		<property name="useReferer" value="true" />
+		<property name="requestCache" ref="httpSessionRequestCache" />
+		<property name="uiExperienceService" ref="uiExperienceService" />
+		<property name="sessionService" ref="sessionService" />
+		<property name="cartFacade" ref="cartFacade" />
+		<property name="forceDefaultTargetForUiExperienceLevel">
+			<map key-type="de.hybris.platform.commerceservices.enums.UiExperienceLevel"
+				value-type="java.lang.Boolean">
+				<entry key="DESKTOP" value="false" />
+				<entry key="MOBILE" value="false" />
+			</map>
+		</property>
+		<property name="bruteForceAttackCounter" ref="bruteForceAttackCounter" />
+	</bean>
+
+	<bean id="punchoutAuthenticationSuccessHandler" parent="loginAuthenticationSuccessHandler">
+		<property name="defaultTargetUrl" value="/" />
+	</bean>
+
+
+
+	<bean id="loginCheckoutGuidAuthenticationSuccessHandler"
+		class="com.grainger.storefront.security.GUIDAuthenticationSuccessHandler">
+		<property name="authenticationSuccessHandler" ref="loginCheckoutAuthenticationSuccessHandler" />
+		<property name="guidCookieStrategy" ref="guidCookieStrategy" />
+		<aop:scoped-proxy />
+	</bean>
+
+	<bean id="loginCheckoutAuthenticationSuccessHandler"
+		class="com.grainger.storefront.security.StorefrontAuthenticationSuccessHandler">
+		<property name="customerFacade" ref="customerFacade" />
+		<property name="accountFacade" ref="gwwAccountFacade" />
+		<property name="defaultTargetUrl" value="/cart" />
+		<property name="targetUrlParameter" value="frwdUrlPath" />
+		<property name="uiExperienceService" ref="uiExperienceService" />
+		<property name="sessionService" ref="sessionService" />
+		<property name="cartFacade" ref="cartFacade" />
+		<property name="forceDefaultTargetForUiExperienceLevel">
+			<map key-type="de.hybris.platform.commerceservices.enums.UiExperienceLevel"
+				value-type="java.lang.Boolean">
+				<entry key="DESKTOP" value="true" />
+				<entry key="MOBILE" value="true" />
+			</map>
+		</property>
+		<property name="bruteForceAttackCounter" ref="bruteForceAttackCounter" />
+	</bean>
+
+
+	<!-- Login Failure Handlers -->
+	<bean id="bruteForceAttackCounter"
+		class="com.grainger.storefront.security.impl.DefaultBruteForceAttackCounter">
+		<constructor-arg name="maxFailedLogins" value="5" />
+		<constructor-arg name="cacheExpiration" value="60" />
+		<constructor-arg name="cacheSizeLimit" value="1000" />
+	</bean>
+
+	<!-- Login Failure Handlers -->
+
+	<bean id="loginAuthenticationFailureHandler"
+		class="com.grainger.storefront.security.LoginAuthenticationFailureHandler">
+		<property name="bruteForceAttackCounter" ref="bruteForceAttackCounter" />
+		<property name="userService" ref="userService" />
+		<property name="defaultFailureUrl" value="/login?error=true" />
+		<property name="usernameParameter" value="j_username"/>
+		<property name="passwordParameter" value="j_password"/>
+		<aop:scoped-proxy />
+	</bean>
+
+	<bean id="loginCheckoutAuthenticationFailureHandler"
+		class="com.grainger.storefront.security.LoginAuthenticationFailureHandler">
+		<property name="bruteForceAttackCounter" ref="bruteForceAttackCounter" />
+		<property name="userService" ref="userService" />
+		<property name="defaultFailureUrl" value="/login/checkout?error=true" />
+		<property name="usernameParameter" value="j_username"/>
+		<property name="passwordParameter" value="j_password"/>
+		<aop:scoped-proxy />
+	</bean>
+
+
+	<!-- Logout Success Handler -->
+
+	<bean id="logoutSuccessHandler"
+		class="com.grainger.storefront.security.StorefrontLogoutSuccessHandler">
+		<property name="defaultTargetUrl" value="/?logout=true" />
+		<property name="punchoutLogoutUrl" value="/punchout/mex/logout" />
+		<property name="guidCookieStrategy" ref="guidCookieStrategy" />
+		<property name="useReferer" value="true" />
+		<property name="restrictedPages">
+			<list>
+				<value>/my-account</value>
+				<value>/checkout</value>
+			</list>
+		</property>
+		<aop:scoped-proxy />
+	</bean>
+
+	<!-- Define all possible roles -->
+	<bean id="b2bUserGroupProvider"
+		class="com.grainger.storefront.security.impl.DefaultB2BUserGroupProvider">
+		<property name="userService" ref="userService" />
+		<property name="b2BCustomerService" ref="defaultB2BCustomerService" />
+		<property name="authorizedGroups">
+			<set value-type="java.lang.String">
+				<value>b2bcustomergroup</value>
+				<value>b2bmanagergroup</value>
+				<value>b2bapprovergroup</value>
+				<value>b2badmingroup</value>
+			</set>
+		</property>
+		<property name="authorizedGroupsToCheckOut">
+			<set value-type="java.lang.String">
+				<value>b2bcustomergroup</value>
+			</set>
+		</property>
+	</bean>
+	<bean id="authenticatedCookieHelper"
+		class="com.grainger.storefront.security.util.AuthenticatedCookieHelper" />
+	<bean id="gwwLoginFilter" class="com.grainger.storefront.filters.GwwLoginFilter">
+		<property name="cmsSiteService" ref="cmsSiteService" />
+		<property name="sessionService" ref="sessionService" />
+		<property name="restrictedURLs">
+			<list>
+				<value>/login/micrositeLevel-select</value>
+				<value>/login/account-select</value>
+				<value>/logout</value>
+				<value>/login/account-catalogs</value>
+				<value>/_s/language</value>
+				<value>/login/unit-select</value>
+				<value>/login/nextLevel-select</value>
+				<value>/login/validateMicrositeLevelForm</value>
+				<value>/captcha-image.html</value>
+				<value>/login/account-ledgers</value>
+			</list>
+		</property>
+	</bean>
+	
+	<bean id="gwwSessionRestorationStrategy" class="com.grainger.storefront.security.impl.GetSessionRestorationStrategy" />
+	
+	<alias name="defaultRememberMeServices" alias="rememberMeServices"/>
+	<bean id="defaultRememberMeServices" class="com.grainger.storefront.security.AcceleratorRememberMeServices" >
+		<constructor-arg name="key" value="yacceleratorstorefront" />
+		<constructor-arg name="userDetailsService" ref="originalUidUserDetailsService" />
+		<property name="cookieName" value="yacceleratorstorefrontRememberMe" />
+		<property name="alwaysRemember" value="false" />
+		<property name="userService" ref="userService"/>
+		<property name="useSecureCookie" value="true"/>
+		<property name="customerFacade" ref="customerFacade"/>
+		<property name="urlEncoderService" ref="urlEncoderService"/>
+		<property name="storeSessionFacade" ref="storeSessionFacade"/>
+		<property name="commonI18NService" ref="commonI18NService"/>
+		<property name="secureTokenService" ref="secureTokenService"/>
+		<property name="tokenValiditySeconds" value="${remember.me.cookie.expiry.secounds}"/>
+	</bean>
+
+	<bean id="rememberMeAuthenticationProvider" class="org.springframework.security.authentication.RememberMeAuthenticationProvider" >
+		<property name="key" value="yacceleratorstorefront"/>
+	</bean>
+</beans>
