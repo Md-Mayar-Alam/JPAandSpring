@@ -1,9 +1,9 @@
-<?xml version="1.0" encoding="UTF-8"?>
-<!-- [y] hybris Platform Copyright (c) 2000-2013 hybris AG All rights reserved. 
+<!-- <?xml version="1.0" encoding="UTF-8"?>
+[y] hybris Platform Copyright (c) 2000-2013 hybris AG All rights reserved. 
 	This software is the confidential and proprietary information of hybris ("Confidential 
 	Information"). You shall not disclose such Confidential Information and shall 
 	use it only in accordance with the terms of the license agreement you entered 
-	into with hybris. -->
+	into with hybris.
 
 <beans xmlns="http://www.springframework.org/schema/beans"
 	xmlns:security="http://www.springframework.org/schema/security"
@@ -22,7 +22,7 @@
 	<context:annotation-config />
 	<context:component-scan base-package="com.grainger.punchout.web.helpers" />
 
-	<!-- do not apply Spring Security to these uri -->
+	do not apply Spring Security to these uri
 	<security:http pattern="/_ui/**" security="none" />
 	<security:http pattern="/flash/**" security="none" />
 	<security:http pattern="/favicon.ico" security="none" />
@@ -32,7 +32,7 @@
 	<security:global-method-security
 		pre-post-annotations="enabled" />
 
-	<!-- Security config for checkout - it has its own login page -->
+	Security config for checkout - it has its own login page
 	<security:http disable-url-rewriting="true" pattern="/checkout/**"
 		entry-point-ref="checkoutAuthenticationEntryPoint">
 		
@@ -44,7 +44,7 @@
 			
 		<security:remember-me key="yacceleratorstorefront" services-ref="rememberMeServices"/>
 
-		<!-- SSL / AUTHENTICATED pages -->
+		SSL / AUTHENTICATED pages
 		<security:intercept-url pattern="/checkout/j_spring_security_check"
 			requires-channel="https" />
 		<security:intercept-url pattern="/checkout*"
@@ -52,7 +52,7 @@
 		<security:intercept-url pattern="/checkout/**"
 			access="hasRole('ROLE_CUSTOMERGROUP')" requires-channel="https" />
 
-		<!-- https for paymetric frame -->
+		https for paymetric frame
 		<security:intercept-url pattern="/PaymentFormController/*"
 			requires-channel="https" />
 		<security:intercept-url pattern="/PaymentFormController/**"
@@ -72,33 +72,33 @@
 				http="#{configurationService.configuration.getProperty('tomcat.http.port')}"
 				https="#{configurationService.configuration.getProperty('tomcat.ssl.port')}" />
 			<security:port-mapping http="80" https="443" />
-			<!--security:port-mapping http="#{configurationService.configuration.getProperty('proxy.http.port')}" 
+			security:port-mapping http="#{configurationService.configuration.getProperty('proxy.http.port')}" 
 				https="#{configurationService.configuration.getProperty('proxy.ssl.port')}" 
-				/ -->
+				/
 		</security:port-mappings>
 
 		<security:request-cache ref="httpSessionRequestCache" />
 
-		<!-- Custom Filters -->
+		Custom Filters
 		<security:custom-filter after="SECURITY_CONTEXT_FILTER" ref="authenticatedHeaderFilter"/>
 
 	</security:http>
 
-	<!-- Ignores url(s) that match paths specified in the set -->
+	Ignores url(s) that match paths specified in the set
 	<bean id="excludeUrlRequestMatcher"
 		class="com.grainger.storefront.security.ExcludeUrlRequestMatcher">
 		<property name="excludeUrlSet" ref="excludeUrlSet" />
 		<property name="pathMatcher" ref="defaultPathMatcher" />
 	</bean>
 
-	<!-- The set of url(s) to exclude from the 'Default security config' -->
+	The set of url(s) to exclude from the 'Default security config'
 	<bean id="excludeUrlSet" class="java.util.HashSet" />
 
-	<!-- Path matcher to use, AntPathMatcher is the default -->
+	Path matcher to use, AntPathMatcher is the default
 	<alias name="antPathMatcher" alias="defaultPathMatcher" />
 	<bean id="antPathMatcher" class="org.springframework.util.AntPathMatcher" />
 
-	<!-- Default security config -->
+	Default security config
 	<security:http disable-url-rewriting="true"
 		request-matcher-ref="excludeUrlRequestMatcher" use-expressions="true"
 		entry-point-ref="gcomAuthenticationEntryPoint">
@@ -115,7 +115,7 @@
 			session-authentication-strategy-ref="fixation" />
 
 
-		<!-- SSL / AUTHENTICATED pages -->
+		SSL / AUTHENTICATED pages
 
 		<security:intercept-url pattern="/my-account/add-user"
 			access="hasAnyRole('ROLE_FULLRIGHTS','ROLE_CUSTOMERADMINRIGHTS')"
@@ -155,7 +155,7 @@
 		<security:intercept-url pattern="/my-account/**"
 			access="hasRole('ROLE_CUSTOMERGROUP')" requires-channel="https" />
 
-		<!-- https for paymetric frame -->
+		https for paymetric frame
 		<security:intercept-url pattern="/PaymentFormController/*"
 			requires-channel="https" />
 		<security:intercept-url pattern="/PaymentFormController/**"
@@ -164,7 +164,7 @@
 		<security:intercept-url pattern="/cart/checkout/"
 			requires-channel="https" />
 
-		<!-- ePro punchout Controller Security -->
+		ePro punchout Controller Security
 		<security:intercept-url pattern="/punchout/mex/cxml"
 			access="permitAll" method="POST" requires-channel="any" />
 		<security:intercept-url pattern="/punchout/mex/oci"
@@ -186,14 +186,14 @@
 			before="SESSION_MANAGEMENT_FILTER" />
 
 
-		<!-- SSL / AUTHENTICATED pages Organization management pages -->
+		SSL / AUTHENTICATED pages Organization management pages
 		<security:intercept-url pattern="/my-company*"
 			access="ROLE_B2BADMINGROUP" requires-channel="https" />
 		<security:intercept-url pattern="/my-company/**"
 			access="ROLE_B2BADMINGROUP" requires-channel="https" />
 
-		<!-- SSL / ANONYMOUS pages Login pages need to be SSL, but occur before 
-			authentication -->
+		SSL / ANONYMOUS pages Login pages need to be SSL, but occur before 
+			authentication
 		<security:intercept-url pattern="/login"
 			requires-channel="https" />
 		<security:intercept-url pattern="/login/account-select"
@@ -213,7 +213,7 @@
 		<security:intercept-url pattern="/register/**"
 			requires-channel="https" access="!hasAnyRole('ROLE_EPROUSER','ROLE_CUSTOMERGROUP')" />
 
-		<!-- Micro site related security configurations -->
+		Micro site related security configurations
 		<security:intercept-url pattern="/my-account/microsites/createPOlist"
 			access="hasRole('ROLE_CUSTOMERADMINRIGHTS')" requires-channel="https" />
 		<security:intercept-url pattern="/my-account/microsites/createPOlist/**"
@@ -227,7 +227,7 @@
 		<security:intercept-url pattern="/my-account/microsites/addToPolist/**"
 			access="hasRole('ROLE_CUSTOMERADMINRIGHTS')" requires-channel="https" />
 
-		<!-- MiniCart and CartPopup can occur on either secure or insecure pages -->
+		MiniCart and CartPopup can occur on either secure or insecure pages
 		<security:intercept-url pattern="/cart/rollover/*"
 			requires-channel="any" />
 		<security:intercept-url pattern="/cart/miniCart/*"
@@ -239,22 +239,22 @@
 		<security:intercept-url pattern="/search/autocomplete/*"
 			requires-channel="any" />
 
-		<!-- Only allow logged in customers to see the ordering form page -->
+		Only allow logged in customers to see the ordering form page
 		<security:intercept-url pattern="/**/p/**/orderForm"
 			access="hasRole('ROLE_CUSTOMERGROUP')" />
 
-		<!-- OPEN / ANONYMOUS pages Run all other (public) pages openly. Note that 
+		OPEN / ANONYMOUS pages Run all other (public) pages openly. Note that 
 			while credentials are secure, the session id can be sniffed. If this is a 
-			security concern, then this line should be re-considered -->
+			security concern, then this line should be re-considered
 		<security:intercept-url pattern="/**"
 			requires-channel="any" method="POST" />
-		<!-- Allow posts on either secure or insecure -->
+		Allow posts on either secure or insecure
 		<security:intercept-url pattern="/**"
 			requires-channel="${storefront.security.default.required.channel}" />
 			
 		<security:intercept-url pattern="/form/newCatalog*"
 			access="hasAnyRole('ROLE_EPROUSER','ROLE_CUSTOMERGROUP')" requires-channel="https" />
-		<!-- Everything else should be insecure -->
+		Everything else should be insecure
 
 		<security:form-login login-page="/login" login-processing-url="/j_spring_security_check"
 			authentication-failure-handler-ref="loginAuthenticationFailureHandler"
@@ -271,14 +271,14 @@
 				http="#{configurationService.configuration.getProperty('tomcat.http.port')}"
 				https="#{configurationService.configuration.getProperty('tomcat.ssl.port')}" />
 			<security:port-mapping http="80" https="443" />
-			<!--security:port-mapping http="#{configurationService.configuration.getProperty('proxy.http.port')}" 
+			security:port-mapping http="#{configurationService.configuration.getProperty('proxy.http.port')}" 
 				https="#{configurationService.configuration.getProperty('proxy.ssl.port')}" 
-				/ -->
+				/
 		</security:port-mappings>
 
 		<security:request-cache ref="httpSessionRequestCache" />
 
-		<!-- Custom Filters -->
+		Custom Filters
 		<security:custom-filter after="SECURITY_CONTEXT_FILTER" ref="authenticatedHeaderFilter"/>
 
 
@@ -383,7 +383,7 @@
 		class="org.springframework.security.web.DefaultRedirectStrategy" />
 
 
-	<!-- Login Success Handlers -->
+	Login Success Handlers
 
 	<bean id="loginGuidAuthenticationSuccessHandler"
 		class="com.grainger.storefront.security.GUIDAuthenticationSuccessHandler">
@@ -454,7 +454,7 @@
 	</bean>
 
 
-	<!-- Login Failure Handlers -->
+	Login Failure Handlers
 	<bean id="bruteForceAttackCounter"
 		class="com.grainger.storefront.security.impl.DefaultBruteForceAttackCounter">
 		<constructor-arg name="maxFailedLogins" value="5" />
@@ -462,7 +462,7 @@
 		<constructor-arg name="cacheSizeLimit" value="1000" />
 	</bean>
 
-	<!-- Login Failure Handlers -->
+	Login Failure Handlers
 
 	<bean id="loginAuthenticationFailureHandler"
 		class="com.grainger.storefront.security.LoginAuthenticationFailureHandler">
@@ -485,7 +485,7 @@
 	</bean>
 
 
-	<!-- Logout Success Handler -->
+	Logout Success Handler
 
 	<bean id="logoutSuccessHandler"
 		class="com.grainger.storefront.security.StorefrontLogoutSuccessHandler">
@@ -502,7 +502,7 @@
 		<aop:scoped-proxy />
 	</bean>
 
-	<!-- Define all possible roles -->
+	Define all possible roles
 	<bean id="b2bUserGroupProvider"
 		class="com.grainger.storefront.security.impl.DefaultB2BUserGroupProvider">
 		<property name="userService" ref="userService" />
@@ -564,3 +564,4 @@
 		<property name="key" value="yacceleratorstorefront"/>
 	</bean>
 </beans>
+ -->
